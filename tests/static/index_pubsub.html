@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>JsMeetsPy</title>
+        <script src="/static/JsPyTextSocket.js"></script>
+        <script src="/static/JsPyFunction.js"></script>
+        <script src="/static/JsPyPubsub.js"></script>
+    </head>
+    <body>
+        <h1>Test of JsPyPubsub</h1>
+
+        <h2>Chat</h2>
+        Chat with clients who are participating in the room with the same topic name.<br>
+        Connect multiple clients and chat with each other.<br>
+        When the topic name is "hello", a message will also be output to the server console.
+        <hr>
+        <h3>Login</h3>
+        Name of topic: <input type="text" value="hello" width="20" id="topic"><br>
+        Handle name: <input type="text" value="your name..." width="20" id="handle"><br>
+        <button type="button" id="in_out" >Login</button>
+        <hr>
+        <h3>My Message</h3>
+        Name of topic: <input type="text" value="" width="40" id="message"><br>
+        <button type="button" id="send" disabled>Send</button>
+        <hr>
+        <h3>Message log</h3>
+        <textarea cols="50" rows="18" id="log" disabled></textarea>
+
+        <script>
+            let login_state = false;
+            let topic = document.querySelector("#topic");
+            let now_topic = "";
+            let handle = document.querySelector("#handle");
+            let now_handle = "";
+            let in_out = document.querySelector("#in_out");
+            let send = document.querySelector("#send");
+            let message = document.querySelector("#message");
+            let log = document.querySelector("#log");
+
+            // Callback function when data is received
+            function topic_callback(id, data){
+                log.value = log.value+"\n\n>> "+data["name"]+"\n"+data["message"];
+            }
+
+            send.addEventListener("click", (event) => {
+                JsPyPubsub.publish(now_topic)({"name": now_handle, "message": message.value});
+            });
+
+            // Manages login and logout.
+            in_out.addEventListener("click", async (event) => {
+                if(login_state === true){
+                    // Logout process
+                    in_out.innerText = "Login";
+                    topic.removeAttribute("disabled");
+                    handle.removeAttribute("disabled");
+                    send.setAttribute("disabled", true);
+                    log.value = "";
+                    await JsPyPubsub.unsubscribe(now_topic);
+                    now_topic = "";
+                    now_handle = "";
+                    login_state = false;
+                }
+                else{
+                    // Login process
+                    in_out.innerText = "Logout";
+                    topic.setAttribute("disabled", "disabled");
+                    handle.setAttribute("disabled", "disabled");
+                    send.removeAttribute("disabled");
+                    now_topic = topic.value;
+                    now_handle = handle.value;
+                    log.value = "";
+                    // Register the topic name and callback function to subscribe.
+                    await JsPyPubsub.subscribe(now_topic, topic_callback);
+                    login_state = true;
+                    let send_data = {"name": now_handle, "message": now_handle+" is now logged in."};
+                    await JsPyPubsub.publish(now_topic)(send_data);
+                }
+            });
+        </script>
+    </body>
+</html>

@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>JsMeetsPy</title>
+        <script src="/static/JsPyBinarySocket.js"></script>
+    </head>
+    <body>
+        <h1>Test of JsPyBinarySocket</h1>
+        Establish a 2ch independent communication path to the same WebSocket endpoint(URL path '/ws') of the server.<br>
+        The server limits the maximum number of socket connections to 4.<br>
+        The number of clients that can be connected at the same time is 2 (= 4[socket] / 2[socket/client]).<br>
+        <hr>
+        <h2>1. Receive data from the server</h2>
+        To send binary data from the server, access the following URL instead.<br>
+        http://localhost:8000/broadcast?data=somedata<br>
+        The character string specified in the query "data" is sent in ASCII code.<br><br>
+
+        Socket1: <input type="text" disabled="true" value="" size="24" id="from_server1"><br>
+        Socket2: <input type="text" disabled="true" value="" size="24" id="from_server2">
+        <hr>
+        <h2>2. Send data to the server</h2>
+        Binary data is expressed by separating each byte by a comma.<br>
+        The 1-byte representation is a decimal number, expressed as 0 to 255.<br>
+        The data sent to the server is printed to the server console.<br><br>
+
+        <input type="text" value="" size="30" id="to_server1"
+         placeholder="12,24,1..." value="">
+         <button id="send_server1" type="button">Send data to server on Socket1</button><br>
+
+         <input type="text" value="" size="30" id="to_server2"
+         placeholder="12,24,1..." value="">
+         <button id="send_server2" type="button">Send data to server on Socket2</button>
+
+        <script>
+            let from_server1 = document.querySelector("#from_server1");
+            let from_server2 = document.querySelector("#from_server2");
+            let to_server1 = document.querySelector("#to_server1");
+            let to_server2 = document.querySelector("#to_server2");
+            let btn1 = document.querySelector("#send_server1");
+            let btn2 = document.querySelector("#send_server2");
+            // Web socket establishment
+            let binary_endpoint1 = new JsPyBinarySocket('/ws');
+            let binary_endpoint2 = new JsPyBinarySocket('/ws');
+
+            // Callback function when data is received
+            function binarycall1(ws, data){
+                let bd = new Uint8Array(data);
+                from_server1.value = bd.join();
+            }
+            function binarycall2(ws, data){
+                let bd = new Uint8Array(data);
+                from_server2.value = bd.join();
+            }
+            binary_endpoint1.set_message_handler(binarycall1);
+            binary_endpoint2.set_message_handler(binarycall2);
+
+            btn1.addEventListener("click", (event) => {
+                try{
+                    let strarr = to_server1.value.split(",");
+                    let iarr = strarr.map((i) => {return(parseInt(i));});
+                    let barr = new Uint8Array(iarr);
+                    binary_endpoint1.send(barr);
+                }
+                catch(e){
+                    // Do nothing
+                }
+            });
+            btn2.addEventListener("click", (event) => {
+                try{
+                    let strarr = to_server2.value.split(",");
+                    let iarr = strarr.map((i) => {return(parseInt(i));});
+                    let barr = new Uint8Array(iarr);
+                    binary_endpoint2.send(barr);
+                }
+                catch(e){
+                    // Do nothing
+                }
+            });
+
+            // Callback function when websocket is closed
+            function onclose1(){
+                from_server1.value = "Close socket!";
+                btn1.disabled = true;
+            }
+            function onclose2(){
+                from_server2.value = "Close socket!";
+                btn2.disabled = true;
+            }
+            binary_endpoint1.add_close_event(onclose1);
+            binary_endpoint2.add_close_event(onclose2);
+        </script>
+    </body>
+</html>

@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Test of JsPyQueue</title>
+        <script src="/static/JsPyTextSocket.js"></script>
+        <script src="/static/JsPyQueue.js"></script>
+        <script src="/static/JsPyFunction.js"></script>
+    </head>
+    <body>
+        <h1>Test of JsPyQueue</h1>
+        <h2>1. Javascript side</h2>
+        The sent data is accumulated in the server queue and output on the server console.<br><br>
+        key name: <input type="text" value="" size="24" id="client_key"><br>
+        value(JSON): <input type="text" value="" size="24" id="client_value" placeholder='{"apple": 100}'><br>
+        <button id="client_push" type="button">Send from client to server</button><br>
+        Data that arrived in the client queue: <span id="client_print"></span>
+        <hr>
+        <h2>2. Python side(server)</h2>
+        Have the server send the queue data to the client.<br><br>
+        key name: <input type="text" value="" size="24" id="server_key"><br>
+        value(JSON): <input type="text" value="" size="24" id="server_value"><br>
+        <button id="server_push" type="button">Send from server to client</button><br>
+
+        <script>
+            let client_key = document.querySelector("#client_key");
+            let client_value = document.querySelector("#client_value");
+            let client_push = document.querySelector("#client_push");
+            let client_print = document.querySelector("#client_print");
+            let server_key = document.querySelector("#server_key");
+            let server_value = document.querySelector("#server_value");
+            let server_push = document.querySelector("#server_push");
+
+            // Callback function when queue data is received
+            function auto_print(key){
+                client_print.innerText = "Key: "+key+", Value: "+JSON.stringify(JsPyQueue.pop(key));
+            }
+            // Register the callback function when the queue data arrives
+            JsPyQueue.add_callback(auto_print);
+
+            client_push.addEventListener("click", (event) => {
+                try{
+                    JsPyQueue.push_nowait(client_key.value)(JSON.parse(client_value.value));
+                }
+                catch(e){
+                    // Do nothing
+                }
+            });
+
+            server_push.addEventListener("click", (event) => {
+                try{
+                    JsPyFunction.call_nowait("push")(server_key.value, JSON.parse(server_value.value));
+                }
+                catch(e){
+                    // Do nothing
+                }
+            });
+        </script>
+    </body>
+</html>
